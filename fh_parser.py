@@ -9,9 +9,9 @@ from xml.dom import minidom
 
 fromPage = 1
 toPage = 201
-thread=210023
-outFb2FileName="out.fb2"
-prettyPrint = False
+thread = 210023
+outFb2FileName = "out.fb2"
+prettyPrint = True
 
 baseImageWidth = 650
 imageQuality = 25
@@ -20,7 +20,7 @@ def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent=" ")
-    
+
 def appendText(section,  text):
     if text:
         if section.text is None:
@@ -37,9 +37,9 @@ def appendTail(section,  tail):
 
 def parseElem(elem,  section,  parent):
     last = section
-
+    
     appendText(section,  elem.text)
-
+    
     for it in elem.iterchildren():
         if it.tag == "a":
             href = it.get("href")
@@ -70,8 +70,11 @@ def parseElem(elem,  section,  parent):
             url = it.get("src")
             if url is not None:
                 image = SubElement(section, 'image')
-                image.set('xlink:href',  "#image" + str(len(Images)))
-                Images.append(url)
+                if url in Images:
+                    image.set('xlink:href',  "#image" + str(Images.index(url)))
+                else:
+                    image.set('xlink:href',  "#image" + str(len(Images)))
+                    Images.append(url)
                 section = image
                 appendTail(section,  it.tail)
             continue
@@ -208,7 +211,6 @@ for pageNumber in range(fromPage, toPage + 1):
 filename = 'temp_image.jpeg'
 i = 0
 for image in Images:
-#    continue
     print("Download image " + str(i) + " from " + str(len(Images)))
     binary = SubElement(fb2doc, 'binary')
     binary.set("id", "image" + str(i))
@@ -232,12 +234,9 @@ for image in Images:
             pass
     except requests.exceptions.RequestException as e:
         pass
-    
     i = i+1
 
 os.remove(filename)
-
-#print (prettify(fb2doc))
 
 print("Saving to file: " + outFb2FileName)
 f = open(outFb2FileName,  "wb")
