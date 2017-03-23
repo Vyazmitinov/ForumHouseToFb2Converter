@@ -1,4 +1,5 @@
 from lxml import etree
+import os
 import base64
 import requests
 from PIL import Image
@@ -6,10 +7,19 @@ from xml.etree.ElementTree import Element, SubElement
 from xml.etree import ElementTree
 from xml.dom import minidom
 
+fromPage = 1
+toPage = 201
+thread=210023
+outFb2FileName="out.fb2"
+prettyPrint = False
+
+baseImageWidth = 650
+imageQuality = 25
+
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
+    return reparsed.toprettyxml(indent=" ")
     
 def appendText(section,  text):
     if text:
@@ -132,8 +142,9 @@ cookie = {'uidfh':'X9WYvljJJaqWpymYVF8RAg==',  '_ym_uid':'1489182882854348927', 
 
 Images = []
 
-for pageNumber in range(1, 201):
-    url = "https://www.forumhouse.ru/threads/210023/page-" + str(pageNumber)
+for pageNumber in range(fromPage, toPage + 1):
+    url = "https://www.forumhouse.ru/threads/" + str(thread) + "/page-" + str(pageNumber)
+    print("Parse page " + str(pageNumber) + " from " + str(toPage - fromPage + 1))
     req=s.get(url, cookies=cookie )
 
     parser = etree.HTMLParser()
@@ -194,37 +205,45 @@ for pageNumber in range(1, 201):
                     for blockquote in blockquotes:
                         parseElem(blockquote,  s_section,  section)
 
-basewidth= 650
-
+filename = 'temp_image.jpeg'
 i = 0
 for image in Images:
 #    continue
+    print("Download image " + str(i) + " from " + str(len(Images)))
     binary = SubElement(fb2doc, 'binary')
     binary.set("id", "image" + str(i))
     binary.set("content-type", "image/jpeg")
     if not image.startswith("http:") and not image.startswith("https:"):
         image = "https://www.forumhouse.ru/" + image
     try:
-        filename = 'temp.gif'
         f = open(filename,  "wb")
         f.write(s.get(image, cookies=cookie).content)
         f.close()
         try:
             img = Image.open(filename)
-            if img.size[1] > basewidth:
-                wpercent = (basewidth / float(img.size[0]))
+            if img.size[1] > baseImageWidth:
+                wpercent = (baseImageWidth / float(img.size[0]))
                 hsize = int((float(img.size[1]) * float(wpercent)))
-                img = img.resize((basewidth, hsize), Image.ANTIALIAS)
-            img.save(filename,  quality = 50)
+                img = img.resize((baseImageWidth, hsize), Image.ANTIALIAS)
+            img.save(filename, format = img.format, quality = imageQuality)
             image_file = open(filename,  'rb')
             binary.text = base64.b64encode(image_file.read()).decode()
-        except :  # This is the correct syntax
-            i = i + 1
-            continue
-    except requests.exceptions.RequestException as e:  # This is the correct syntax
-        i = i + 1
-        continue
-        
+        except : 
+            pass
+    except requests.exceptions.RequestException as e:
+        pass
+    
     i = i+1
 
-print (prettify(fb2doc))
+os.remove(filename)
+
+#print (prettify(fb2doc))
+
+print("Saving to file: " + outFb2FileName)
+f = open(outFb2FileName,  "wb")
+if prettyPrint:
+    f.write(str.encode(prettify(fb2doc)))
+else:
+    f.write(ElementTree.tostring(fb2doc, 'utf-8'))
+f.close()
+print("Done")
