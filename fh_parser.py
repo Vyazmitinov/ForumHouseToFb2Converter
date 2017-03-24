@@ -15,6 +15,7 @@ prettyPrint = True
 
 baseImageWidth = 650
 imageQuality = 25
+convertToGrayscale = True
 
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
@@ -228,6 +229,8 @@ for image in Images:
         f.close()
         try:
             img = Image.open(filename)
+            if convertToGrayscale:
+                img = img.convert('L')
             if img.size[1] > baseImageWidth:
                 wpercent = (baseImageWidth / float(img.size[0]))
                 hsize = int((float(img.size[1]) * float(wpercent)))
