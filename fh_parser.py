@@ -10,7 +10,7 @@ from xml.dom import minidom
 fromPage = 1
 toPage = 201
 thread = 210023
-outFb2FileName = "out.fb2"
+outFb2FileName = "karkanik_svoimi_rukami.fb2"
 prettyPrint = True
 
 baseImageWidth = 650
@@ -145,6 +145,8 @@ cookie = {'uidfh':'X9WYvljJJaqWpymYVF8RAg==',  '_ym_uid':'1489182882854348927', 
 
 Images = []
 
+body = SubElement(fb2doc, 'body')
+
 for pageNumber in range(fromPage, toPage + 1):
     url = "https://www.forumhouse.ru/threads/" + str(thread) + "/page-" + str(pageNumber)
     print("Parse page " + str(pageNumber) + " from " + str(toPage - fromPage + 1))
@@ -153,8 +155,11 @@ for pageNumber in range(fromPage, toPage + 1):
     parser = etree.HTMLParser()
     root = etree.fromstring(req.text.encode('utf-8'), parser=parser)
 
-    body = SubElement(fb2doc, 'body')
-    
+    pageSection = SubElement(body, 'section')
+    pageTitle = SubElement(pageSection, 'title')
+    pageTitleP  = SubElement(pageTitle, 'p')
+    pageTitleP.text = "Page " + str(pageNumber)
+
     messageLists = root.xpath('//ol[@class = "messageList"]')
     for messageList in messageLists:
         messages = messageList.xpath('//li')
@@ -172,14 +177,11 @@ for pageNumber in range(fromPage, toPage + 1):
             if len(author) == 0:
                 continue
             
-            mainSection = SubElement(body, 'section')
+            mainSection = pageSection
 
-            title = SubElement(mainSection, 'title')
-            titleP  = SubElement(title, 'p')
-            titleP.text = author
-
-            section = SubElement(mainSection, 'section')
-            s_section = SubElement(section, 'p')
+            s_section = SubElement(mainSection, 'p')
+            title = SubElement(s_section, 'strong')
+            title.text = author
 
             messageContents = message.xpath('.//div[@class = "messageContent"]')
             for messageContent in messageContents:
@@ -196,7 +198,7 @@ for pageNumber in range(fromPage, toPage + 1):
                         quoteMsg = quoteContainer.text.strip()
                 
                 if (quoteMsg != ''):
-                    cite = SubElement(section, 'cite')
+                    cite = SubElement(mainSection, 'cite')
                     textAuthor = SubElement(cite, 'text-author')
                     textAuthor.text = commentator
                     parag = SubElement(cite, 'p')
@@ -206,7 +208,10 @@ for pageNumber in range(fromPage, toPage + 1):
                 for article in articles:
                     blockquotes  = article.xpath('.//blockquote[@class = "messageText SelectQuoteContainer ugc baseHtml"]')
                     for blockquote in blockquotes:
-                        parseElem(blockquote,  s_section,  section)
+                        parseElem(blockquote,  s_section,  mainSection)
+
+            SubElement(mainSection, 'empty-line')
+            SubElement(mainSection, 'empty-line')
 
 filename = 'temp_image.jpeg'
 i = 0
