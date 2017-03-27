@@ -8,14 +8,15 @@ from xml.etree import ElementTree
 from xml.dom import minidom
 
 fromPage = 1
-toPage = 201
-thread = 210023
-outFb2FileName = "karkanik_svoimi_rukami.fb2"
+toPage = 129
+thread = 214335
+outFb2FileName = "moy_shans_USP+karkas.fb2"
 prettyPrint = True
 
 baseImageWidth = 650
-imageQuality = 25
+imageQuality = 35
 convertToGrayscale = True
+minImageSizeForConverting = 4096
 
 def prettify(elem):
     rough_string = ElementTree.tostring(elem, 'utf-8')
@@ -228,14 +229,15 @@ for image in Images:
         f.write(s.get(image, cookies=cookie).content)
         f.close()
         try:
-            img = Image.open(filename)
-            if convertToGrayscale:
-                img = img.convert('L')
-            if img.size[1] > baseImageWidth:
-                wpercent = (baseImageWidth / float(img.size[0]))
-                hsize = int((float(img.size[1]) * float(wpercent)))
-                img = img.resize((baseImageWidth, hsize), Image.ANTIALIAS)
-            img.save(filename, format = img.format, quality = imageQuality)
+            if os.stat(filename).st_size > minImageSizeForConverting:
+                img = Image.open(filename)
+                if convertToGrayscale:
+                    img = img.convert('L')
+                if img.size[1] > baseImageWidth:
+                    wpercent = (baseImageWidth / float(img.size[0]))
+                    hsize = int((float(img.size[1]) * float(wpercent)))
+                    img = img.resize((baseImageWidth, hsize), Image.ANTIALIAS)
+                img.save(filename, format = img.format, quality = imageQuality)
             image_file = open(filename,  'rb')
             binary.text = base64.b64encode(image_file.read()).decode()
         except : 
