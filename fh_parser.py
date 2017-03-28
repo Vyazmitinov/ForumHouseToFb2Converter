@@ -155,8 +155,7 @@ fb2doc.set('xmlns:xlink',  'http://www.w3.org/1999/xlink')
 description = SubElement(fb2doc, 'description')
 
 s = requests.Session()
-cookie = {'uidfh':'X9WYvljJJaqWpymYVF8RAg==',  '_ym_uid':'1489182882854348927',  '_ym_isad':'2',  '_ga':'GA1.2.438686107.1489182881', 
-   '_ym_visorc_25329920':'w',  'fh_auth_session_id':'Qn9eEqTnrnKl7bf60C7IlBKnOXJJh01AFCjzdj4C',  'xf_tb_authflag':'1'}
+cookie = {'fh_auth_session_id':'Qn9eEqTnrnKl7bf60C7IlBKnOXJJh01AFCjzdj4C',  'xf_tb_authflag':'1'}
 
 Images = []
 
