@@ -12,6 +12,7 @@ toPage = 13
 thread = 49978
 outFb2FileName = "Filosofiya_doma.fb2"
 prettyPrint = True
+saveOnlyAuthor = ["lt654"]
 
 baseImageWidth = 1000
 imageQuality = 35
@@ -189,6 +190,9 @@ for pageNumber in range(fromPage, toPage + 1):
                 author = message.get("data-author")
 
             if not author or len(author) == 0:
+                continue
+
+            if (len(saveOnlyAuthor) > 0) and (author not in saveOnlyAuthor):
                 continue
             
             mainSection = pageSection
