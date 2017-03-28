@@ -8,12 +8,12 @@ from xml.etree import ElementTree
 from xml.dom import minidom
 
 fromPage = 1
-toPage = 129
-thread = 214335
-outFb2FileName = "moy_shans_USP+karkas.fb2"
+toPage = 13
+thread = 49978
+outFb2FileName = "Filosofiya_doma.fb2"
 prettyPrint = True
 
-baseImageWidth = 650
+baseImageWidth = 1000
 imageQuality = 35
 convertToGrayscale = True
 minImageSizeForConverting = 4096
@@ -37,6 +37,13 @@ def appendTail(section,  tail):
         else:
             section.tail += tail.strip()
 
+def addImage(image,  url):
+    if url in Images:
+        image.set('xlink:href',  "#image" + str(Images.index(url)))
+    else:
+        image.set('xlink:href',  "#image" + str(len(Images)))
+        Images.append(url)
+
 def parseElem(elem,  section,  parent):
     last = section
     
@@ -50,8 +57,12 @@ def parseElem(elem,  section,  parent):
             
             if href.startswith("https://www.forumhouse.ru/attachments/"):
                 image = SubElement(section, 'image')
-                image.set('xlink:href',  "#image" + str(len(Images)))
-                Images.append(href)
+                addImage(image, href)
+                continue
+
+            if href.startswith("attachments/"):
+                image = SubElement(section, 'image')
+                addImage(image, href)
                 continue
 
             if href.startswith("mailto:"):
@@ -72,11 +83,7 @@ def parseElem(elem,  section,  parent):
             url = it.get("src")
             if url is not None:
                 image = SubElement(section, 'image')
-                if url in Images:
-                    image.set('xlink:href',  "#image" + str(Images.index(url)))
-                else:
-                    image.set('xlink:href',  "#image" + str(len(Images)))
-                    Images.append(url)
+                addImage(image, url)
                 section = image
                 appendTail(section,  it.tail)
             continue
@@ -90,18 +97,23 @@ def parseElem(elem,  section,  parent):
             if it.tag == "div":
                 itClass = it.get("class")
 
-                if itClass is not None and itClass.strip() == "bbCodeBlock bbCodeQuote":
-                    citeText = SubElement(parent, 'cite')
-                    citeTextAuthor = SubElement(citeText, 'text-author')
-                    citeTextParag = SubElement(citeText, 'p')
-                    appendText(citeTextAuthor,  it.get("data-author"))
-                    for it_aside in it.iterchildren("aside"):
-                        for it_blockquote in it_aside.iterchildren("blockquote"):
-                            last = parseElem(it_blockquote,  citeTextParag,  citeText)
-            
-                if itClass is not None and itClass.strip() == "quote":
-                    last = parseElem(it,  section,  parent)
-                    continue
+                if itClass:
+                    if itClass.strip() == "bbCodeBlock bbCodeQuote":
+                        citeText = SubElement(parent, 'cite')
+                        citeTextAuthor = SubElement(citeText, 'text-author')
+                        citeTextParag = SubElement(citeText, 'p')
+                        appendText(citeTextAuthor,  it.get("data-author"))
+                        for it_aside in it.iterchildren("aside"):
+                            for it_blockquote in it_aside.iterchildren("blockquote"):
+                                last = parseElem(it_blockquote,  citeTextParag,  citeText)
+                
+                    if itClass.strip() == "quote":
+                        last = parseElem(it,  section,  parent)
+                        continue
+                    
+                    if itClass.strip() == "boxModelFixer primaryContent" or itClass.strip() == "thumbnail Tooltip" :
+                        last = parseElem(it,  section,  parent)
+                        continue
 
             section = SubElement(parent, 'p');
             appendText(section,  it.tail)
@@ -128,7 +140,7 @@ def parseElem(elem,  section,  parent):
             appendTail(section,  it.tail)
             continue
 
-        if it.tag == "noindex":
+        if it.tag == "noindex" or it.tag == "ul" or it.tag == "li":
             last = parseElem(it,  section,  section)
             continue
     
@@ -176,7 +188,7 @@ for pageNumber in range(fromPage, toPage + 1):
             if (msgClass == 'message') :
                 author = message.get("data-author")
 
-            if len(author) == 0:
+            if not author or len(author) == 0:
                 continue
             
             mainSection = pageSection
@@ -205,12 +217,17 @@ for pageNumber in range(fromPage, toPage + 1):
                     textAuthor.text = commentator
                     parag = SubElement(cite, 'p')
                     parag.text = quoteMsg
-                    
+                
+                lastMessage = s_section
                 articles = messageContent.xpath('.//article')
                 for article in articles:
                     blockquotes  = article.xpath('.//blockquote[@class = "messageText SelectQuoteContainer ugc baseHtml"]')
                     for blockquote in blockquotes:
-                        parseElem(blockquote,  s_section,  mainSection)
+                        lastMessage = parseElem(blockquote,  s_section,  mainSection)
+
+                attachedFiles = messageContent.xpath('.//div[@class = "attachedFiles"]')
+                for attachedFile in attachedFiles:
+                    parseElem(attachedFile,  lastMessage,  s_section)
 
             SubElement(mainSection, 'empty-line')
             SubElement(mainSection, 'empty-line')
